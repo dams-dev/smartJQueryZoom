@@ -1,0 +1,30 @@
+{
+  "name": " SmartJQueryZoom",
+  "title": "Pan and zoom jQuery",
+  "description": "Smooth cross-browser pan and zoom (mobile and desktop)",
+  "keywords": [
+    "zoom",
+    "panzoom",
+    "smooth",
+    "mobile",
+    "CSS3"
+  ],
+  "version": "1.0",
+  "author": {
+    "name": "Damien Corzani",
+    "url": "http://e-smartdev.com"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/e-smartdev/smartJQueryZoom/blob/master/MIT-License.txt"
+    }
+  ],
+  "bugs": "https://github.com/e-smartdev/smartJQueryZoom/issues",
+  "homepage": "http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery",
+  "docs": "http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery",
+  "download": "https://github.com/e-smartdev/smartJQueryHitTest/zipball/master",
+  "dependencies": {
+    "jquery": ">=1.7.1"
+  }
+}
