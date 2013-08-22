@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+		<title>e-smartdev : pan and zoom plugin</title>
+		<meta name="description" content="" />
+		<meta name="author" content="damien" />
+
+		<!--<meta name="viewport" content="width=device-width; initial-scale=1.0" />-->
+		
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" href="styles.css" type="text/css" />
+		<script src="../src/jquery-1.7.1.min.js"></script>
+		<script src="../src/e-smart-zoom-jquery.min.js"></script>
+		<!--[if lt IE 9]>
+			<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<script>
+			$(document).ready(function() {
+				
+				$('#imageFullScreen').smartZoom({'containerClass':'zoomableContainer'});
+				
+				$('#topPositionMap,#leftPositionMap,#rightPositionMap,#bottomPositionMap').bind("click", moveButtonClickHandler);
+  				$('#zoomInButton,#zoomOutButton').bind("click", zoomButtonClickHandler);
+				
+				function zoomButtonClickHandler(e){
+			    	var scaleToAdd = 0.8;
+					if(e.target.id == 'zoomOutButton')
+						scaleToAdd = -scaleToAdd;
+					$('#imageFullScreen').smartZoom('zoom', scaleToAdd);
+			    }
+			    
+			    function moveButtonClickHandler(e){
+			    	var pixelsToMoveOnX = 0;
+					var pixelsToMoveOnY = 0;
+			
+					switch(e.target.id){
+						case "leftPositionMap":
+							pixelsToMoveOnX = 50;	
+						break;
+						case "rightPositionMap":
+							pixelsToMoveOnX = -50;
+						break;
+						case "topPositionMap":
+							pixelsToMoveOnY = 50;	
+						break;
+						case "bottomPositionMap":
+							pixelsToMoveOnY = -50;	
+						break;
+					}
+					$('#imageFullScreen').smartZoom('pan', pixelsToMoveOnX, pixelsToMoveOnY);
+			    }
+				
+			});
+		</script>
+	</head>
+	<body>
+		<header id="header">
+			<div id="headerContainer">
+				<div id="logo">
+					<a href="http://e-smartdev.com"><img src="assets/logo.png" /></a>
+				</div>
+				<div id="pluginName">
+					<h1>Pan and zoom jQuery plugin</h1>
+				</div>
+			</div>
+		</header>
+		<div id="page">
+			<div id="pageContent">
+				<p id="pluginDetails">This is a plugin demonstration page, for documentation visit : <a href="http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery" target="blank" id="websiteLink">e-smartdev.com</a> </p>
+				<div id="imgContainer">
+					<img id="imageFullScreen" src="assets/zoomFullScreen.jpg"/>
+				</div>
+				<div id="positionButtonDiv">
+					<p>Zoom : 
+						<span>
+							<img id="zoomInButton" class="zoomButton" src="assets/zoomIn.png" title="zoom in" alt="zoom in" />
+							<img id="zoomOutButton" class="zoomButton" src="assets/zoomOut.png" title="zoom out" alt="zoom out" />
+						</span>
+					</p>
+					<p>
+						<span class="positionButtonSpan">
+							<map name="positionMap" class="positionMapClass">
+								<area id="topPositionMap" shape="rect" coords="20,0,40,20" title="move up" alt="move up"/>
+								<area id="leftPositionMap" shape="rect" coords="0,20,20,40" title="move left" alt="move left"/>
+								<area id="rightPositionMap" shape="rect" coords="40,20,60,40" title="move right" alt="move right"/>
+								<area id="bottomPositionMap" shape="rect" coords="20,40,40,60" title="move bottom" alt="move bottom"/>
+							</map>
+							<img src="assets/position.png" usemap="#positionMap" />
+						</span>
+					</p>
+				</div>
+			</div>
+		</div>
+		<footer>
+		</footer>
+		
+	</body>
+</html>
