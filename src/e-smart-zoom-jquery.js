@@ -15,7 +15,17 @@
   $.fn.smartZoom = function(method) {
     // define global vars
 	var targetElement = this; // the element target of the plugin
-	
+    
+	/**
+	 * ESmartZoomEvent Class 
+	 * define const use to dispatch zoom events
+	 */
+	function ESmartZoomEvent(type){}
+	ESmartZoomEvent.ZOOM = "SmartZoom_ZOOM";
+	ESmartZoomEvent.PAN = "SmartZoom_PAN";
+	ESmartZoomEvent.START = "START";
+	ESmartZoomEvent.END = "END";   	
+
 	/**
 	 * define public methods that user user could call 
 	 */
@@ -71,7 +81,7 @@
 		    
 		    // create the container that will contain the zoom target
 		    var zoomContainerId = "smartZoomContainer"+new Date().getTime();
-		    var containerDiv = $('<div id="'+zoomContainerId+'" class="'+settings.containerClass+'"></div>"');
+		    var containerDiv = $('<div id="'+zoomContainerId+'" class="'+settings.containerClass+'"></div>');
 		    targetElement.before(containerDiv);
 		    targetElement.remove();
 		    containerDiv = $('#'+zoomContainerId);
@@ -99,7 +109,10 @@
                currentWheelDelta:0, // the current mouse wheel delta used to calculate scale to apply
                adjustedPosInfos:null, // use to save the adjust information in "adjustToContainer" method (so we can access the normal target size in plugin when we whant)
                moveCurrentPosition:null, // save the current mouse/touch position use in "moveOnMotion" method   
-               moveLastPosition:null // save the last mouse/touch position use in "moveOnMotion" method  
+               moveLastPosition:null, // save the last mouse/touch position use in "moveOnMotion" method  
+               mouseMoveForPan:false, // use to know if the user pan or not
+               currentActionType:'', // use to save the current user action type (equal to 'ZOOM' or 'PAN')
+               currentActionStep:'' // equal to 'START' or 'END'
             });
             
 			// adjust the contain and target size into the page            
@@ -145,7 +158,7 @@
 		    }
 		    
 	    	// stop previous effect before make calculation
-	    	stopAnim(); 
+	    	stopAnim(ESmartZoomEvent.ZOOM); 
 	    	
 	  		var targetRect = getTargetRect(true); // the target rectangle in global position
 	 		var originalSize = smartData.originalSize;
@@ -168,10 +181,13 @@
 		
 			if(duration == null) // default effect duration is 700ms
 				duration = 700;
+
+			dispatchSmartZoomEvent(ESmartZoomEvent.ZOOM, ESmartZoomEvent.START, false); 
 			
 			animate(targetElement, validPosition.x, validPosition.y, newWidth, newHeight, duration, function(){ // set the new position and size via the animation function
 				smartData.currentWheelDelta = 0; // reset the weelDelta when zoom end
 			 	updateMouseMoveCursor(); // remove "move" cursor when zoom end
+			 	dispatchSmartZoomEvent(ESmartZoomEvent.ZOOM, ESmartZoomEvent.END, false); 
 			});
 			
 	    },
@@ -194,8 +210,11 @@
 	    	
 	    	if(validPosition.x != currentPosition.left || validPosition.y != currentPosition.top){
 	    		// stop previous effect before make calculation
-	    		stopAnim();
-				animate(targetElement, validPosition.x, validPosition.y, targetRect.width, targetRect.height, duration);
+	    		stopAnim(ESmartZoomEvent.PAN);
+	    		dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.START, false); 
+				animate(targetElement, validPosition.x, validPosition.y, targetRect.width, targetRect.height, duration, function(){ // set the new position and size via the animation function
+				 	dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.END, false); 
+				});
 			}
 	    },
 	     /**
@@ -233,7 +252,7 @@
 	    	return targetElement.data('smartZoomData') != undefined;
 	    }
     };
-    
+
     if (publicMethods[method] ) { // if the parameter is an existing method, then we call this method
     	return publicMethods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
     } else if (typeof method === 'object' || ! method ) { // else if it's an object we initilize the plugin
@@ -308,7 +327,9 @@
      * @param {Object} e : mouse event
      */
     function mouseMoveHandler(e){
-    	moveOnMotion(e.pageX, e.pageY, 0);
+    	var smartData = targetElement.data('smartZoomData');
+    	smartData.mouseMoveForPan = true;
+    	moveOnMotion(e.pageX, e.pageY, 0, false);
 	}
     
     /**
@@ -318,11 +339,15 @@
     function mouseUpHandler(e){
     	
     	var smartData = targetElement.data('smartZoomData');
-    	if(smartData.moveLastPosition.distance(smartData.moveCurrentPosition) > 4){ // smooth the drag end when user move the mouse fast
-			var interpolateP = smartData.moveLastPosition.interpolate(smartData.moveCurrentPosition, -4);
-			moveOnMotion(interpolateP.x, interpolateP.y, 500);
+    	if(smartData.mouseMoveForPan){
+    		smartData.mouseMoveForPan = false;
+	    	if(smartData.moveLastPosition.distance(smartData.moveCurrentPosition) > 4){ // smooth the drag end when user move the mouse fast
+				var interpolateP = smartData.moveLastPosition.interpolate(smartData.moveCurrentPosition, -4);
+				moveOnMotion(interpolateP.x, interpolateP.y, 500, true);
+			}else{
+				moveOnMotion(smartData.moveLastPosition.x, smartData.moveLastPosition.y, 0, true);
+			}
 		}
-		
 		$(document).unbind('mousemove.smartZoom'); // remove listeners when drag is done
 		$(document).unbind('mouseup.smartZoom');    	
     }
@@ -372,7 +397,7 @@
 		
 		if(nbTouch == 1 && !smartData.touch.touchPinch && smartData.settings.touchMoveEnabled == true){ // if the user use only one finger and touchPinch==false => we manage drag
 			smartData.touch.touchMove = true;
-			moveOnMotion(currentFirstTouchEv.clientX, currentFirstTouchEv.clientY, 0);
+			moveOnMotion(currentFirstTouchEv.clientX, currentFirstTouchEv.clientY, 0, false);
 		}else if(nbTouch == 2 && !smartData.touch.touchMove && smartData.settings.pinchEnabled == true){ // if the user use two fingers and touchMove==false => we manage pinch 
 			smartData.touch.touchPinch = true;
 			
@@ -423,7 +448,7 @@
     	if(smartData.touch.touchMove){ // smooth motion at end if we are in drag mode
     		if(smartData.moveLastPosition.distance(smartData.moveCurrentPosition) > 1){ // smooth only if the user drag fast
 				var interpolateP = smartData.moveLastPosition.interpolate(smartData.moveCurrentPosition, -4); // the end smooth motion is calculate according to last finger motion 
-				moveOnMotion(interpolateP.x, interpolateP.y, 500);
+				moveOnMotion(interpolateP.x, interpolateP.y, 500, true);
 			}
     	}else{
     		if(smartData.settings.dblTapEnabled == true && smartData.touch.lastTouchEndTime != 0 && new Date().getTime() - smartData.touch.lastTouchEndTime < 300){ // if the user double tap (double tap if there is less than 300 ms between first and second tap)
@@ -440,8 +465,8 @@
      * @param {Number} yPos : new y position to set 
      * @param {Number} duration : move effect duration
      */
-    function moveOnMotion(xPos, yPos, duration){
-    	stopAnim();// stop previous effect before make calculation
+    function moveOnMotion(xPos, yPos, duration, motionEnd){
+    	stopAnim(ESmartZoomEvent.PAN);// stop previous effect before make calculation
     	
     	var smartData = targetElement.data('smartZoomData');
     	smartData.moveLastPosition.x = smartData.moveCurrentPosition.x; // save the current position in "moveLastPosition" before moving the plugin target
@@ -455,7 +480,11 @@
     	
     	var validPosition = getValidTargetElementPosition(newMarginLeft, newMarginTop, targetRect.width, targetRect.height); // check if the new position is valid
 	   	
-	   	animate(targetElement, validPosition.x, validPosition.y, targetRect.width, targetRect.height, duration); // move to the right position
+		dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.START, false); 
+
+	   	animate(targetElement, validPosition.x, validPosition.y, targetRect.width, targetRect.height, duration, motionEnd == true ? function(){
+		 	dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.END, false); 
+	   	}: null); // move to the right position
 	   	
 	 	smartData.moveCurrentPosition.x = xPos; // save the new position
 		smartData.moveCurrentPosition.y = yPos;
@@ -486,8 +515,8 @@
     /**
      * stop the animation
      */
-    function stopAnim(){
-    	
+    function stopAnim(userActionType){
+
     	var smartData = targetElement.data('smartZoomData');
     	if(smartData.transitionObject){ // if css transformation is surpported
     		if(smartData.transitionObject.cssAnimTimer) // stop the transformation end handler if it exists
@@ -508,6 +537,9 @@
     		targetElement.stop(); // if we use a jquery transformation, just call stop function
     	}
     	updateMouseMoveCursor(); // update mouse move cursor after animation stop (set the cross cursor or not)
+
+    	if(userActionType != null)
+    		dispatchSmartZoomEvent(userActionType, '', true); 
     }
     
     /**
@@ -563,7 +595,9 @@
 	  	smartData.adjustedPosInfos = {"left":(containerRect.width - newWidth)/2 + parentOffset.left, "top": (containerRect.height - newHeight)/2 + parentOffset.top, "width": newWidth, "height" : newHeight, "scale":scaleToFit};
 	  	stopAnim();
 	  	// call animate method with 10 ms duration to apply new target position and size
-	  	animate(targetElement,  smartData.adjustedPosInfos.left , smartData.adjustedPosInfos.top, newWidth, newHeight, 0);
+	  	animate(targetElement,  smartData.adjustedPosInfos.left , smartData.adjustedPosInfos.top, newWidth, newHeight, 0, function() {
+	  		targetElement.css('visibility','visible'); // set target visibility to visible if developper whant to hide it before the plugin resize
+	  	});
 	  	updateMouseMoveCursor(); 
     }
     
@@ -651,7 +685,41 @@
     	}
     	return {'x' : x,'y' : y, 'width' : width, 'height' : height};
     }
-    
+
+    /**
+     * dispatch zoom or pan event 
+     * @param {Boolean} fromZoom : set to true if the function is call from zoom action
+     * 
+     **/
+    function dispatchSmartZoomEvent(actionType, actionStep, stop){
+		var smartData = targetElement.data('smartZoomData');
+		var eventTypeToDispatch = '';
+
+		if(stop == true && smartData.currentActionType != actionType){ // if the action type has changed and that the function is called from "stopAnim" dispatch END event
+			eventTypeToDispatch = smartData.currentActionType+'_'+ESmartZoomEvent.END;
+			smartData.currentActionType = '';
+			smartData.currentActionStep = '';
+		}else{ 
+			if(smartData.currentActionType != actionType || smartData.currentActionStep == ESmartZoomEvent.END){ // if the current action had changed (MOVE to ZOOM for exemple) and the last action step was END we whant to dispatch START
+				smartData.currentActionType = actionType;
+				smartData.currentActionStep = ESmartZoomEvent.START;
+				eventTypeToDispatch = smartData.currentActionType+'_'+smartData.currentActionStep;
+			}else if(smartData.currentActionType == actionType && actionStep == ESmartZoomEvent.END){ // dispatch END if actionstep ask is END and action type don't change
+				smartData.currentActionStep = ESmartZoomEvent.END;
+				eventTypeToDispatch = smartData.currentActionType+'_'+smartData.currentActionStep;
+				smartData.currentActionType = '';
+				smartData.currentActionStep = '';
+			}
+		}
+
+		if(eventTypeToDispatch != ''){ // dispatch event if we have to
+			var ev = jQuery.Event(eventTypeToDispatch);
+			ev.targetRect = getTargetRect(true);
+			ev.scale = ev.targetRect.width / smartData.originalSize.width;
+			targetElement.trigger(ev);
+		}
+    }
+
     /**
 	 * return an object that contains the kind of CSS3 supported transition
 	 *  @return {Object} {'transition':'-webkit-transition', 'transform':'-webkit-transform', 'css3dSupported':'true'}
@@ -770,8 +838,8 @@
 		    return Math.sqrt(Math.pow((point.y - this.y) ,2) + Math.pow((point.x - this.x),2));
 		} 
 	}
-	
-	   	
+
+
   };
 })( jQuery );
 
