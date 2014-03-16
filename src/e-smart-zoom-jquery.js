@@ -18,7 +18,7 @@
     
 	/**
 	 * ESmartZoomEvent Class 
-	 * define const use to dispatch zoom events
+	 * define const use to dispatch zoom event
 	 */
 	function ESmartZoomEvent(type){}
 	ESmartZoomEvent.ZOOM = "SmartZoom_ZOOM";
@@ -45,7 +45,8 @@
 		  *					           'mouseMoveEnabled' : true enable plugin target drag behviour
 		  * 					       'moveCursorEnabled' : true show moveCursor for drag
 		  * 					       'touchEnabled' : true enable plugin touch interaction 
-		  *						       'dblTapEnabled' : true enable plugin double tap behaviour 
+		  *						       'dblTapEnabled' : true enable plugin double tap behaviour
+		  *							   'zoomOnSimpleClick': false enable zoom on simple click (if set to true dbl lick is disabled)
 		  *						       'pinchEnabled' : true enable zoom when user pinch on target
 		  *						       'touchMoveEnabled' : true enable target move via touch
 		  *                            'containerBackground' : '#FFFFFF' zoom target container background color (if containerClass is not set)
@@ -73,6 +74,7 @@
 		      'moveCursorEnabled' : true,
 		      'touchEnabled' : true,
 		      'dblTapEnabled' : true,
+		      'zoomOnSimpleClick': false,
 		      'pinchEnabled' : true,
 		      'touchMoveEnabled' : true,
 		      'containerBackground' : "#FFFFFF",
@@ -128,7 +130,7 @@
 		        	containerDiv.bind('mousewheel.smartZoom', mouseWheelHandler);
 			        containerDiv.bind( 'mousewheel.smartZoom DOMMouseScroll.smartZoom', containerMouseWheelHander);
 		        }
-		        if(settings.dblClickEnabled == true)
+		        if(settings.dblClickEnabled == true && settings.zoomOnSimpleClick == false)
 		        	containerDiv.bind('dblclick.smartZoom', mouseDblClickHandler);
 	        }
 	       	document.ondragstart = function () { return false; }; // allow to remove browser default drag behaviour
@@ -315,7 +317,7 @@
      */
     function mouseDownHandler(e){
     	e.preventDefault(); // prevent default browser drag
-		$(document).bind('mousemove.smartZoom', mouseMoveHandler); // add mouse move and mouseup listeners to enable drag
+		$(document).on('mousemove.smartZoom', mouseMoveHandler); // add mouse move and mouseup listeners to enable drag
 		$(document).bind('mouseup.smartZoom', mouseUpHandler);
 		var smartData = targetElement.data('smartZoomData'); // save mouse position on mouse down
 		smartData.moveCurrentPosition = new Point(e.pageX, e.pageY);
@@ -327,9 +329,12 @@
      * @param {Object} e : mouse event
      */
     function mouseMoveHandler(e){
+
     	var smartData = targetElement.data('smartZoomData');
-    	smartData.mouseMoveForPan = true;
-    	moveOnMotion(e.pageX, e.pageY, 0, false);
+    	if(smartData.mouseMoveForPan || (!smartData.mouseMoveForPan && smartData.moveCurrentPosition.x != e.pageX && smartData.moveCurrentPosition.y != e.pageY)){
+    		smartData.mouseMoveForPan = true;
+    		moveOnMotion(e.pageX, e.pageY, 0, false);
+    	}
 	}
     
     /**
@@ -347,7 +352,10 @@
 			}else{
 				moveOnMotion(smartData.moveLastPosition.x, smartData.moveLastPosition.y, 0, true);
 			}
+		}else if(smartData.settings.zoomOnSimpleClick){
+			zoomOnDblClick(e.pageX, e.pageY);
 		}
+		
 		$(document).unbind('mousemove.smartZoom'); // remove listeners when drag is done
 		$(document).unbind('mouseup.smartZoom');    	
     }
