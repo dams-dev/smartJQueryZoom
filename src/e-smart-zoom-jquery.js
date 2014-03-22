@@ -18,7 +18,7 @@
     
 	/**
 	 * ESmartZoomEvent Class 
-	 * define const use to dispatch zoom event
+	 * define const use to dispatch zoom events
 	 */
 	function ESmartZoomEvent(type){}
 	ESmartZoomEvent.ZOOM = "SmartZoom_ZOOM";
