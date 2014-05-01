@@ -735,9 +735,6 @@
 	 */	 
     function getBrowserTransitionObject(){
     	
-	   if(jQuery.browser.opera) // performance issues with Opera and css transition JS is better
-	   	  return null;
-    	
 	   var pageBody = document.body || document.documentElement;
 	   var bodyStyle = pageBody.style;
 	   

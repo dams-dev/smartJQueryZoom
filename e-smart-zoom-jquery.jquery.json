@@ -11,7 +11,7 @@
     "mobile",
     "CSS3"
   ],
-  "version": "1.0.2",
+  "version": "1.0.6",
   "author": {
     "name": "Damien Corzani",
     "url": "http://e-smartdev.com"
@@ -28,6 +28,6 @@
   "demo": "http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery",
   "download": "https://github.com/e-smartdev/smartJQueryHitTest/zipball/master",
   "dependencies": {
-    "jquery": ">=1.7.1"
+    "jquery": ">=1.11.0"
   }
 }
