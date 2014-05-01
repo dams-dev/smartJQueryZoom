@@ -72,6 +72,7 @@
 		      'dblClickEnabled' : true,
 		      'mouseMoveEnabled' : true,
 		      'moveCursorEnabled' : true,
+		      'adjustOnResize' : true, 
 		      'touchEnabled' : true,
 		      'dblTapEnabled' : true,
 		      'zoomOnSimpleClick': false,
@@ -134,8 +135,8 @@
 		        	containerDiv.bind('dblclick.smartZoom', mouseDblClickHandler);
 	        }
 	       	document.ondragstart = function () { return false; }; // allow to remove browser default drag behaviour
-	        
-		    $(window).bind('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
+	        if(settings.adjustOnResize == true)
+		    	$(window).bind('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
 	    },
 	   /**
 		  * zoom function used into the plugin and accessible via direct call (ex : $('#zoomImage').smartZoom('zoom', 0.2);)
@@ -754,7 +755,7 @@
 			    transformObject = new Object();
 			    transformObject[transformArr[i]] = "translate3d(20px,0,0)";
 			    div.css(transformObject);
-			    css3dSupported = (div.offset().left == 20); // if translate3d(20px,0,0) via transformArr[i] == 20px the transformation is valid for this browser
+			    css3dSupported = ((div.offset().left - $('body').offset().left) == 20); // if translate3d(20px,0,0) via transformArr[i] == 20px the transformation is valid for this browser
 			    div.empty().remove();
 	   			if(css3dSupported){ // return the kind of transformation supported
 					return {transition:transitionArr[i], transform:transformArr[i], css3dSupported:css3dSupported};
