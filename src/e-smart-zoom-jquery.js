@@ -852,15 +852,17 @@
 /*
  * add smartZoomEasing and smartZoomOutQuad to jQuery easing function 
  */
-$.extend($.easing,
-{
-    smartZoomEasing: function (x, t, b, c, d) {
-        return $.easing['smartZoomOutQuad'](x, t, b, c, d);
-    },
-    smartZoomOutQuad: function (x, t, b, c, d) {
-        return -c *(t/=d)*(t-2) + b;
-    }
-});
+(function($){
+    $.extend($.easing,
+    {
+        smartZoomEasing: function (x, t, b, c, d) {
+            return $.easing['smartZoomOutQuad'](x, t, b, c, d);
+        },
+        smartZoomOutQuad: function (x, t, b, c, d) {
+            return -c *(t/=d)*(t-2) + b;
+        }
+    });
+})(jQuery);
 
 /*! Copyright (c) 2011 Brandon Aaron (http://brandonaaron.net)
  * Licensed under the MIT License (LICENSE.txt).
