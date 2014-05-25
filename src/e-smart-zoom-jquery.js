@@ -24,7 +24,8 @@
 	ESmartZoomEvent.ZOOM = "SmartZoom_ZOOM";
 	ESmartZoomEvent.PAN = "SmartZoom_PAN";
 	ESmartZoomEvent.START = "START";
-	ESmartZoomEvent.END = "END";   	
+	ESmartZoomEvent.END = "END";
+	ESmartZoomEvent.DESTROYED = "SmartZoom_DESTROYED";   	
 
 	/**
 	 * define public methods that user user could call 
@@ -37,6 +38,7 @@
 		  * 						   'width' : '100%' zoom target container width in pixel or in percent
 		  * 						   'height' : '100%' zoom target container height in pixel or in percent 
 		  *                            'easing' : 'smartZoomEasing' jquery easing function used when the browser doesn't support css transitions
+		  * 						   'initCallback' : null a callback function to call after plugin initilization
 		  * 						   'maxScale' : 3 the max scale that will be applied on the zoom target
 		  *							   'dblClickMaxScale' : 1.8 the max scale that will be applied on the zoom target on double click
 		  *  				     	   'mouseEnabled' : true enable plugin mouse interaction 
@@ -65,6 +67,7 @@
 		      'width' : "100%",
 		      'height' : "100%",
 		      'easing' : "smartZoomEasing",
+		      'initCallback' : null,
 		      'maxScale' : 3,
 		      'dblClickMaxScale' : 1.8,
 		      'mouseEnabled' : true,
@@ -82,6 +85,8 @@
 		      'containerClass' : ""
 		    }, options);
 		    
+			var targetElementInitialStyles = targetElement.attr('style'); // save target element initial styles
+
 		    // create the container that will contain the zoom target
 		    var zoomContainerId = "smartZoomContainer"+new Date().getTime();
 		    var containerDiv = $('<div id="'+zoomContainerId+'" class="'+settings.containerClass+'"></div>');
@@ -115,6 +120,7 @@
                moveLastPosition:null, // save the last mouse/touch position use in "moveOnMotion" method  
                mouseMoveForPan:false, // use to know if the user pan or not
                currentActionType:'', // use to save the current user action type (equal to 'ZOOM' or 'PAN')
+               initialStyles:targetElementInitialStyles, // use in destroy method to reset initial styles
                currentActionStep:'' // equal to 'START' or 'END'
             });
             
@@ -137,6 +143,9 @@
 	       	document.ondragstart = function () { return false; }; // allow to remove browser default drag behaviour
 	        if(settings.adjustOnResize == true)
 		    	$(window).bind('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
+
+		    if(settings.initCallback != null) // call callback function after plugin initialization
+		    	settings.initCallback.apply(this, targetElement);
 	    },
 	   /**
 		  * zoom function used into the plugin and accessible via direct call (ex : $('#zoomImage').smartZoom('zoom', 0.2);)
@@ -247,6 +256,8 @@
 	   		animate(targetElement, smartData.originalPosition.left, smartData.originalPosition.top,  smartData.originalSize.width, smartData.originalSize.height, 5); // reset initial position
 	   		targetElement.removeData('smartZoomData');// clean saved data
 		    containerDiv.remove(); // remove zoom container
+		    targetElement.attr('style', smartData.initialStyles); // reset initial styles
+		    targetElement.trigger(ESmartZoomEvent.DESTROYED); // dispatch event after plugin destruction
 	    },
 	    /**
 	     * call this funcion to know if the plugin is used 
@@ -380,14 +391,14 @@
 		var smartData = targetElement.data('smartZoomData'); 
 		smartData.touch.touchMove = false; // will be set to true if the user start drag
 		smartData.touch.touchPinch = false; // will be set to true if the user whant to pinch (zoom)
-    	smartData.moveCurrentPosition = new Point(firstTouch.clientX, firstTouch.clientY); // save the finger position on screen on touch start
-    	smartData.moveLastPosition = new Point(firstTouch.clientX, firstTouch.clientY);
+    	smartData.moveCurrentPosition = new Point(firstTouch.pageX, firstTouch.pageY); // save the finger position on screen on touch start
+    	smartData.moveLastPosition = new Point(firstTouch.pageX, firstTouch.pageY);
     	smartData.touch.lastTouchPositionArr = new Array(); // save touch position off all fingers to manage pinch
     	var currentTouch;
     	var nbTouch = touchList.length;
     	for(var i = 0;i<nbTouch;++i){
     		currentTouch = touchList[i];
-    		smartData.touch.lastTouchPositionArr.push(new Point(currentTouch.clientX, currentTouch.clientY));
+    		smartData.touch.lastTouchPositionArr.push(new Point(currentTouch.pageX, currentTouch.pageY));
     	}
     }
     
@@ -396,6 +407,7 @@
      * @param {Object} e : touch event
      */
     function touchMoveHandler(e){ 
+
  		e.preventDefault(); // prevent default browser behaviour
 
     	var smartData = targetElement.data('smartZoomData');
@@ -405,16 +417,23 @@
 		var currentFirstTouchEv = touchListEv[0];
 		
 		if(nbTouch == 1 && !smartData.touch.touchPinch && smartData.settings.touchMoveEnabled == true){ // if the user use only one finger and touchPinch==false => we manage drag
-			smartData.touch.touchMove = true;
-			moveOnMotion(currentFirstTouchEv.clientX, currentFirstTouchEv.clientY, 0, false);
+			if(!smartData.touch.touchMove){ 
+				var downLastPoint = smartData.touch.lastTouchPositionArr[0];
+				if(downLastPoint.distance(new Point(currentFirstTouchEv.pageX, currentFirstTouchEv.pageY))<3){ // check if user really had moved
+					return;
+				}
+				else
+					smartData.touch.touchMove = true;
+			}
+			moveOnMotion(currentFirstTouchEv.pageX, currentFirstTouchEv.pageY, 0, false);
 		}else if(nbTouch == 2 && !smartData.touch.touchMove && smartData.settings.pinchEnabled == true){ // if the user use two fingers and touchMove==false => we manage pinch 
 			smartData.touch.touchPinch = true;
 			
 			var currentSecondTouchEv = touchListEv[1]; // get current fingers position and last fingers positions
 			var lastP1 = smartData.touch.lastTouchPositionArr[0];
 			var lastP2 = smartData.touch.lastTouchPositionArr[1];
-			var currentP1 = new Point(currentFirstTouchEv.clientX, currentFirstTouchEv.clientY);
-			var currentP2 = new Point(currentSecondTouchEv.clientX, currentSecondTouchEv.clientY);
+			var currentP1 = new Point(currentFirstTouchEv.pageX, currentFirstTouchEv.pageY);
+			var currentP2 = new Point(currentSecondTouchEv.pageX, currentSecondTouchEv.pageY);
 			
 			var currentP1P2Distance = currentP1.distance(currentP2); // distance between current two fingers positions
 			var lastP1P2Distance = lastP1.distance(lastP2); // distance between the last two fingers positions registered 
@@ -455,12 +474,12 @@
     		return;
     		
     	if(smartData.touch.touchMove){ // smooth motion at end if we are in drag mode
-    		if(smartData.moveLastPosition.distance(smartData.moveCurrentPosition) > 1){ // smooth only if the user drag fast
+    		if(smartData.moveLastPosition.distance(smartData.moveCurrentPosition) > 2){ // smooth only if the user drag fast
 				var interpolateP = smartData.moveLastPosition.interpolate(smartData.moveCurrentPosition, -4); // the end smooth motion is calculate according to last finger motion 
 				moveOnMotion(interpolateP.x, interpolateP.y, 500, true);
 			}
     	}else{
-    		if(smartData.settings.dblTapEnabled == true && smartData.touch.lastTouchEndTime != 0 && new Date().getTime() - smartData.touch.lastTouchEndTime < 300){ // if the user double tap (double tap if there is less than 300 ms between first and second tap)
+    		if(smartData.settings.dblTapEnabled == true && smartData.touch.lastTouchEndTime != 0 && new Date().getTime() - smartData.touch.lastTouchEndTime < 400){ // if the user double tap (double tap if there is less than 300 ms between first and second tap)
 				var lastStartPos = smartData.touch.lastTouchPositionArr[0];
 			    zoomOnDblClick(lastStartPos.x, lastStartPos.y);  
 	    	}
@@ -518,6 +537,7 @@
     	}else{
     		scaleDiff = originalScale - currentScale;
     	}
+
     	publicMethods.zoom(scaleDiff, {"x":pageX, "y":pageY});	 
     }
     
