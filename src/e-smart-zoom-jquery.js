@@ -548,8 +548,8 @@
 
     	var smartData = targetElement.data('smartZoomData');
     	if(smartData.transitionObject){ // if css transformation is surpported
-    		if(smartData.transitionObject.cssAnimTimer) // stop the transformation end handler if it exists
-    			clearTimeout(smartData.transitionObject.cssAnimTimer); 
+    		if(smartData.transitionObject.cssAnimHandler) // stop the transformation end handler if it exists
+    		  targetElement.off($.support.transition, smartData.transitionObject.cssAnimTimer); 
 			var originalSize = smartData.originalSize; // get the original target size   			
 	   		var targetRect = getTargetRect(); // the target current size
 	   	
@@ -658,9 +658,11 @@
 		  		cssObject[smartData.transitionObject.transform] = 'translate3d('+left+'px, '+top+'px, 0) scale3d('+width/originalSize.width+','+height/originalSize.height+', 1)';
 		  	else
 		  		cssObject[smartData.transitionObject.transform] = 'translateX('+left+'px) translateY('+top+'px) scale('+width/originalSize.width+','+height/originalSize.height+')';
+		  	if(callback != null){
+		  		smartData.transitionObject.cssAnimHandler = callback;
+          target.one($.support.transition.end, smartData.transitionObject.cssAnimHandler);
+        }
 		  	target.css(cssObject); // apply css transformation
-		  	if(callback != null) // add callback at end if the parameter is set
-		  		smartData.transitionObject.cssAnimTimer = setTimeout(callback, duration);
 		}else{ // use JQuery animate if css transition is not supported
 	    	
 	    	target.animate({"margin-left": left, "margin-top": top, "width": width, "height" : height}, {duration:duration, easing:smartData.settings.easing, complete:function() {
@@ -745,6 +747,7 @@
 			var ev = jQuery.Event(eventTypeToDispatch);
 			ev.targetRect = getTargetRect(true);
 			ev.scale = ev.targetRect.width / smartData.originalSize.width;
+      //console.log(targetElement, eventTypeToDispatch);
 			targetElement.trigger(ev);
 		}
     }
@@ -896,3 +899,39 @@
  * Requires: 1.2.2+
  */
 (function(e){function r(t){var n=t||window.event,r=[].slice.call(arguments,1),i=0,s=true,o=0,u=0;t=e.event.fix(n);t.type="mousewheel";if(n.wheelDelta){i=n.wheelDelta/120}if(n.detail){i=-n.detail/3}u=i;if(n.axis!==undefined&&n.axis===n.HORIZONTAL_AXIS){u=0;o=-1*i}if(n.wheelDeltaY!==undefined){u=n.wheelDeltaY/120}if(n.wheelDeltaX!==undefined){o=-1*n.wheelDeltaX/120}r.unshift(t,i,o,u);return(e.event.dispatch||e.event.handle).apply(this,r)}var t=["DOMMouseScroll","mousewheel"];if(e.event.fixHooks){for(var n=t.length;n;){e.event.fixHooks[t[--n]]=e.event.mouseHooks}}e.event.special.mousewheel={setup:function(){if(this.addEventListener){for(var e=t.length;e;){this.addEventListener(t[--e],r,false)}}else{this.onmousewheel=r}},teardown:function(){if(this.removeEventListener){for(var e=t.length;e;){this.removeEventListener(t[--e],r,false)}}else{this.onmousewheel=null}}};e.fn.extend({mousewheel:function(e){return e?this.bind("mousewheel",e):this.trigger("mousewheel")},unmousewheel:function(e){return this.unbind("mousewheel",e)}})})(jQuery)
+
+// CSS TRANSITION SUPPORT (Shoutout: http://www.modernizr.com/)
+// ============================================================
+
+function transitionEnd() {
+  var el = document.createElement('bootstrap');
+
+  var transEndEventNames = {
+    'WebkitTransition' : 'webkitTransitionEnd',
+    'MozTransition'    : 'transitionend',
+    'OTransition'      : 'oTransitionEnd otransitionend',
+    'transition'       : 'transitionend'
+  };
+
+  for (var name in transEndEventNames) {
+    if (el.style[name] !== undefined) {
+      return { end: transEndEventNames[name] };
+    }
+  }
+
+  return false; // explicit for ie8 (  ._.)
+}
+
+// http://blog.alexmaccaw.com/css-transitions
+$.fn.emulateTransitionEnd = function (duration) {
+  var called = false, $el = this;
+  $(this).one($.support.transition.end, function () { called = true; })
+  var callback = function () { if (!called) $($el).trigger($.support.transition.end); }
+  setTimeout(callback, duration);
+  return this;
+};
+
+$(function () {
+  $.support.transition = transitionEnd();
+});
+
