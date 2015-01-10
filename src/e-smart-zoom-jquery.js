@@ -145,7 +145,7 @@
 		    	$(window).bind('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
 
 		    if(settings.initCallback != null) // call callback function after plugin initialization
-		    	settings.initCallback.apply(this, targetElement);
+		    	settings.initCallback.apply(this, [targetElement]);
 	    },
 	   /**
 		  * zoom function used into the plugin and accessible via direct call (ex : $('#zoomImage').smartZoom('zoom', 0.2);)
