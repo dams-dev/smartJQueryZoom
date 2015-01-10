@@ -241,7 +241,7 @@
 	    	var containerDiv = smartData.containerDiv;
 	    	// remove all listenerns 
 	        targetElement.unbind('mousedown.smartZoom');
-	        targetElement.bind('touchstart.smartZoom');
+	        targetElement.unbind('touchstart.smartZoom');
 	    	containerDiv.unbind('mousewheel.smartZoom');
 	        containerDiv.unbind('dblclick.smartZoom');
 	    	containerDiv.unbind( 'mousewheel.smartZoom DOMMouseScroll.smartZoom');
