@@ -61,7 +61,7 @@
 	    		return; 
 	    		
 	    	// Create some defaults, extending them with any options that were provided
-			settings = $.extend( {
+			var settings = $.extend( {
 		      'top' : "0",
 		      'left' : "0",
 		      'width' : "100%",
