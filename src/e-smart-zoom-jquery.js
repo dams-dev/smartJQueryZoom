@@ -84,6 +84,7 @@
 					'dblTapEnabled': true,
 					'zoomOnSimpleClick': false,
 					'pinchEnabled': true,
+					'pinchLocker': {lock: function(){}, unlock: function(){}},
 					'touchMoveEnabled': true,
 					'containerBackground': "#FFFFFF",
 					'containerClass': ""
@@ -166,6 +167,9 @@
 				var smartData = targetElement.data('smartZoomData');
 				var globaRequestedX;
 				var globaRequestedY;
+				if (!smartData.settings.pinchLocker.lock(smartData)) {
+					return;
+				}
 				if (!globalRequestedPosition) { // use target center if globalRequestedPosition is not set
 					var containerRect = getRect(smartData.containerDiv);
 					globaRequestedX = containerRect.x + containerRect.width / 2;
@@ -318,6 +322,9 @@
 				"x": e.pageX,
 				"y": e.pageY
 			}); // 0.15
+			if(!publicMethods.isZoomed() && smartData.settings.pinchLocker.lock(smartData)){
+				smartData.settings.pinchLocker.unlock(smartData);
+			}
 		}
 
 		/**
@@ -360,6 +367,8 @@
 			$(document).on('mousemove.smartZoom', mouseMoveHandler); // add mouse move and mouseup listeners to enable drag
 			$(document).bind('mouseup.smartZoom', mouseUpHandler);
 			var smartData = targetElement.data('smartZoomData'); // save mouse position on mouse down
+			if(!smartData)
+				return;
 			smartData.moveCurrentPosition = new Point(e.pageX, e.pageY);
 			smartData.moveLastPosition = new Point(e.pageX, e.pageY);
 		}
@@ -369,10 +378,10 @@
 		 * @param {Object} e : mouse event
 		 */
 		function mouseMoveHandler(e) {
-			if (typeof settings.canIMove === "function" && settings.canIMove() == false) {
+			var smartData = targetElement.data('smartZoomData');
+			if (!publicMethods.isZoomed() || !smartData.settings.pinchLocker.lock(smartData)) {
 				return;
 			}
-			var smartData = targetElement.data('smartZoomData');
 			if (smartData.mouseMoveForPan || (!smartData.mouseMoveForPan && smartData.moveCurrentPosition.x != e.pageX && smartData.moveCurrentPosition.y != e.pageY)) {
 				smartData.mouseMoveForPan = true;
 				moveOnMotion(e.pageX, e.pageY, 0, false);
@@ -419,6 +428,8 @@
 			var firstTouch = touchList[0];
 
 			var smartData = targetElement.data('smartZoomData');
+			if(!smartData)
+				return;
 			smartData.touch.touchMove = false; // will be set to true if the user start drag
 			smartData.touch.touchPinch = false; // will be set to true if the user whant to pinch (zoom)
 			smartData.moveCurrentPosition = new Point(firstTouch.pageX, firstTouch.pageY); // save the finger position on screen on touch start
@@ -444,8 +455,12 @@
 			var touchListEv = e.originalEvent.touches; // get touch information on event
 			var nbTouch = touchListEv.length;
 			var currentFirstTouchEv = touchListEv[0];
-
+			if(!smartData)
+				return;
 			if (nbTouch == 1 && !smartData.touch.touchPinch && smartData.settings.touchMoveEnabled == true) { // if the user use only one finger and touchPinch==false => we manage drag
+				if (!publicMethods.isZoomed() || !smartData.settings.pinchLocker.lock(smartData)){
+					return;
+				}
 				if (!smartData.touch.touchMove) {
 					var downLastPoint = smartData.touch.lastTouchPositionArr[0];
 					if (downLastPoint.distance(new Point(currentFirstTouchEv.pageX, currentFirstTouchEv.pageY)) < 3) { // check if user really had moved
@@ -456,8 +471,10 @@
 				}
 				moveOnMotion(currentFirstTouchEv.pageX, currentFirstTouchEv.pageY, 0, false);
 			} else if (nbTouch == 2 && !smartData.touch.touchMove && smartData.settings.pinchEnabled == true) { // if the user use two fingers and touchMove==false => we manage pinch
+				if (!smartData.settings.pinchLocker.lock(smartData)){
+					return;
+				}
 				smartData.touch.touchPinch = true;
-
 				var currentSecondTouchEv = touchListEv[1]; // get current fingers position and last fingers positions
 				var lastP1 = smartData.touch.lastTouchPositionArr[0];
 				var lastP2 = smartData.touch.lastTouchPositionArr[1];
@@ -515,7 +532,7 @@
 			}
 			var smartData = targetElement.data('smartZoomData');
 
-			if (smartData.touch.touchPinch) // nothing to do for pinch behaviour in this function
+			if (!smartData || smartData.touch.touchPinch) // nothing to do for pinch behaviour in this function
 				return;
 
 			if (smartData.touch.touchMove) { // smooth motion at end if we are in drag mode
@@ -529,6 +546,9 @@
 					zoomOnDblClick(lastStartPos.x, lastStartPos.y);
 				}
 				smartData.touch.lastTouchEndTime = new Date().getTime();
+			}
+			if(!publicMethods.isZoomed() && smartData.settings.pinchLocker.lock(smartData)){
+				smartData.settings.pinchLocker.unlock(smartData);
 			}
 		}
 
