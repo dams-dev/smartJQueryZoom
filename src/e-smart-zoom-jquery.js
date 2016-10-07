@@ -437,8 +437,7 @@
 		 * @param {Object} e : touch event
 		 */
 		function touchMoveHandler(e) {
-
-			e.preventDefault(); // prevent default browser behaviour
+			preventDefaultOnDrag(e); // prevent default browser behaviour when the target is zoomed
 
 			var smartData = targetElement.data('smartZoomData');
 
@@ -483,6 +482,22 @@
 
 				smartData.touch.lastTouchPositionArr[0] = currentP1; //update last touch position points for next function iteration
 				smartData.touch.lastTouchPositionArr[1] = currentP2;
+			}
+		}
+
+		/**
+		 * Prevent default browser behaviour on drag into the target only when it is zoomed
+		 *
+		 * @param {Event} e : the original touch event
+		 */
+		function preventDefaultOnDrag(e) {
+			var smartData = targetElement.data('smartZoomData');
+			var targetRect = getTargetRect(); // the current plugin target size
+			var originSize = smartData.originalSize; // original plugin target size
+			var currentScale = (targetRect.width / originSize.width);
+
+			if (currentScale !== 1) {
+				e.preventDefault();
 			}
 		}
 
