@@ -282,6 +282,13 @@
 				var targetRect = getTargetRect();
 				var currentScale = (targetRect.width / smartData.originalSize.width);
 				return parseInt(currentScale * 100) > parseInt(smartData.adjustedPosInfos.scale * 100) // multiply by 100 to resolve precision problem
+			},
+
+			/**
+			 * update Container size
+			 */
+			resize: function(){
+				adjustToContainer();
 			}
 		};
 
