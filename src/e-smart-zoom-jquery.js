@@ -84,7 +84,7 @@
 					'dblTapEnabled': true,
 					'zoomOnSimpleClick': false,
 					'pinchEnabled': true,
-					'pinchLocker': {lock: function(){}, unlock: function(){}},
+					'pinchLocker': {lock: function(){return true;}, unlock: function(){return true;}},
 					'touchMoveEnabled': true,
 					'containerBackground': "#FFFFFF",
 					'containerClass': ""
@@ -509,6 +509,8 @@
 		 */
 		function preventDefaultOnDrag(e) {
 			var smartData = targetElement.data('smartZoomData');
+			if(!smartData)
+				return;
 			var targetRect = getTargetRect(); // the current plugin target size
 			var originSize = smartData.originalSize; // original plugin target size
 			var currentScale = (targetRect.width / originSize.width);
