@@ -416,7 +416,7 @@
 		 * @param {Object} e : touch event
 		 */
 		function touchStartHandler(e) {
-			e.preventDefault(); // prevent default browser drag
+			preventDefaultOnDragStart(e); // prevent default browser drag
 
 			$(document).unbind('touchmove.smartZoom'); // unbind if we already listen touch events
 			$(document).unbind('touchend.smartZoom');
@@ -516,6 +516,21 @@
 			var currentScale = (targetRect.width / originSize.width);
 
 			if (currentScale !== 1) {
+				e.preventDefault();
+			}
+		}
+
+		/**
+		 * Prevent default browser behaviour on drag into the target only when it is zoomed
+		 * @param {Event} e : the original touch event
+		 */
+		function preventDefaultOnDragStart(e) {
+			var smartData = targetElement.data('smartZoomData');
+			var targetRect = getTargetRect(); // the current plugin target size
+			var originSize = smartData.originalSize; // original plugin target size
+			var touchList = e.originalEvent.touches; // get touch infos from event
+			var currentScale = (targetRect.width / originSize.width);
+			if (currentScale == 1 && touchList.length > 1) {
 				e.preventDefault();
 			}
 		}
