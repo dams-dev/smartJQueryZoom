@@ -4,7 +4,14 @@ This plugin manage smooth zoom and pan on a given dom element. The plugin works 
 
 Zoom is enabled via mouse events (scroll and click) on pc and with touch events on mobile devices.
 
-For live examples and more explanations visit : [http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery](http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery)
+Tested on:
+- Chrome 56
+- Firefox 52
+- Edge 
+
+Some browser dont support touch event or need special flags watche here: http://caniuse.com/#search=touch
+
+For live examples and more explanations visit : [http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery](http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery) //is down (16.03.2017)
 
 ##Initialization
 
@@ -30,6 +37,7 @@ options = {'top' : '0', // zoom target container top position in pixel
            'mouseMoveEnabled' : true, // enable plugin target drag behviour
            'moveCursorEnabled' : true, // show moveCursor for drag
            'touchEnabled' : true, // enable plugin touch interaction 
+           'Border' : true enable border by the container inside 
            'dblTapEnabled' : true, // enable plugin double tap behaviour 
            'pinchEnabled' : true, // enable zoom when user pinch on target
            'touchMoveEnabled' : true, // enable target move via touch
@@ -74,6 +82,20 @@ __Arguments__
   1. `pixelsToMoveOnX` _{Number}_: Pixels to add on horizontal axis
   2. `pixelsToMoveOnY` _{Object}_: Pixels to add on vertical axis.
   3. `duration` _{Number}_: Effect duration in millisecondes. (Default 700)
+
+
+###`smartZoom("moveToAndScale", coodsX, coodsY, scale)`
+Move and Zoom to the given position.
+```js
+	jQuery(document).ready(function(){
+     $('#domElementToZoom').smartZoom("moveToAndScale", 100, 100, 2);
+  });
+```
+__Arguments__
+
+  1. `coodsX` _{Number}_: Position to move on horizontal-axis
+  2. `coodsY` _{Number}_: Position to move on on vertical axis.
+  3. `scale` _{Number}_:  Set the scale. (Default 700)
 
 ###`smartZoom("destroy")`
 Remove and clean the plugin.

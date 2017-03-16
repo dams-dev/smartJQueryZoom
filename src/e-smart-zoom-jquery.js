@@ -4,8 +4,8 @@
  *	http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery
  *	
  *	Copyright (c) 2012 Damien Corzani
- *	http://e-smartdev.com/
- *
+ *	http://e-smartdev.com/ 
+ * 
  *	Dual licensed under the MIT and GPL licenses.
  *	http://en.wikipedia.org/wiki/MIT_License
  *	http://en.wikipedia.org/wiki/GNU_General_Public_License
@@ -30,7 +30,7 @@
 	/**
 	 * define public methods that user user could call 
 	 */
-    var publicMethods = {
+	var publicMethods = {
     	/**
 		  * initialize zoom component
 		  * @param {Object} options = {'top': '0' zoom target container top position in pixel
@@ -47,6 +47,7 @@
 		  *					           'mouseMoveEnabled' : true enable plugin target drag behviour
 		  * 					       'moveCursorEnabled' : true show moveCursor for drag
 		  * 					       'touchEnabled' : true enable plugin touch interaction 
+		  * 					       'Border' : true enable border by the container inside 
 		  *						       'dblTapEnabled' : true enable plugin double tap behaviour
 		  *							   'zoomOnSimpleClick': false enable zoom on simple click (if set to true dbl lick is disabled)
 		  *						       'pinchEnabled' : true enable zoom when user pinch on target
@@ -81,17 +82,20 @@
 		      'zoomOnSimpleClick': false,
 		      'pinchEnabled' : true,
 		      'touchMoveEnabled' : true,
+		      'Border': true,
 		      'containerBackground' : "#FFFFFF",
-		      'containerClass' : ""
+		      'containerClass': "",
+		      'zoomInElement': null,
+		      'zoomOutElement': null,
+		      'resetElement': null
 		    }, options);
 		    
 			var targetElementInitialStyles = targetElement.attr('style'); // save target element initial styles
-
 		    // create the container that will contain the zoom target
 		    var zoomContainerId = "smartZoomContainer"+new Date().getTime();
 		    var containerDiv = $('<div id="'+zoomContainerId+'" class="'+settings.containerClass+'"></div>');
 		    targetElement.before(containerDiv);
-		    targetElement.remove();
+		    //targetElement.remove();
 		    containerDiv = $('#'+zoomContainerId);
 		    containerDiv.css({'overflow':'hidden'});
 		    if(settings.containerClass == "")
@@ -113,7 +117,7 @@
                originalPosition: targetElement.offset(), // plugin target position at the beginning 
                transitionObject:getBrowserTransitionObject(), // use to know if the browser is compatible with css transition
                touch:touchInfos, // save touchInfos
-               mouseWheelDeltaFactor:0.15, // enable to slow down the zoom via mouse wheel
+               mouseWheelDeltaFactor:0.015, // enable to slow down the zoom via mouse wheel
                currentWheelDelta:0, // the current mouse wheel delta used to calculate scale to apply
                adjustedPosInfos:null, // use to save the adjust information in "adjustToContainer" method (so we can access the normal target size in plugin when we whant)
                moveCurrentPosition:null, // save the current mouse/touch position use in "moveOnMotion" method   
@@ -123,26 +127,43 @@
                initialStyles:targetElementInitialStyles, // use in destroy method to reset initial styles
                currentActionStep:'' // equal to 'START' or 'END'
             });
-            
 			// adjust the contain and target size into the page            
 		    adjustToContainer();
 
 			// listening mouse and touch events
 			if(settings.touchEnabled == true)
-	        	targetElement.bind('touchstart.smartZoom', touchStartHandler);
+				targetElement.on('touchstart.smartZoom', touchStartHandler);
 	        if(settings.mouseEnabled == true){
-	        	if(settings.mouseMoveEnabled == true)
-		        	targetElement.bind('mousedown.smartZoom', mouseDownHandler);
+	            if (settings.mouseMoveEnabled == true) 
+	                targetElement.on('mousedown.smartZoom', mouseDownHandler);
 		        if(settings.scrollEnabled == true){
-		        	containerDiv.bind('mousewheel.smartZoom', mouseWheelHandler);
-			        containerDiv.bind( 'mousewheel.smartZoom DOMMouseScroll.smartZoom', containerMouseWheelHander);
+		        	containerDiv.on('mousewheel.smartZoom', mouseWheelHandler);
+			        containerDiv.on( 'mousewheel.smartZoom DOMMouseScroll.smartZoom', containerMouseWheelHander);
 		        }
 		        if(settings.dblClickEnabled == true && settings.zoomOnSimpleClick == false)
-		        	containerDiv.bind('dblclick.smartZoom', mouseDblClickHandler);
+		        	containerDiv.on('dblclick.smartZoom', mouseDblClickHandler);
+	        }
+	        if (settings.zoomInElement != null) {
+	            settings.zoomInElement.on("click", function (e) {
+	                e.preventDefault();
+	                customzoom("+");
+	            });
+	        };
+	        if (settings.zoomOutElement != null) {
+	            settings.zoomOutElement.on("click", function (e) {
+	                e.preventDefault();
+	                customzoom("-");
+	            });
+	        }
+	        if (settings.resetElement != null) {
+	            settings.resetElement.on("click", function (e) {
+	                e.preventDefault();
+	                adjustToContainer();
+	            });
 	        }
 	       	document.ondragstart = function () { return false; }; // allow to remove browser default drag behaviour
 	        if(settings.adjustOnResize == true)
-		    	$(window).bind('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
+		    	$(window).on('resize.smartZoom', windowResizeEventHandler); // call "adjustToContainer" on resize
 
 		    if(settings.initCallback != null) // call callback function after plugin initialization
 		    	settings.initCallback.apply(this, targetElement);
@@ -179,7 +200,7 @@
 	    	// manage scale min, max
 	  		newScale = Math.max(smartData.adjustedPosInfos.scale, newScale); // the scale couldn't be lowest than the initial scale
 	  		newScale = Math.min(smartData.settings.maxScale, newScale); // the scale couldn't be highest than the max setted by user
-	  		
+	  		//outcomment new widght
 	        var newWidth = originalSize.width * newScale; // new size to apply according to new scale
 		  	var newHeight = originalSize.height * newScale;
 		  
@@ -229,27 +250,50 @@
 				});
 			}
 	    },
+		// move and scale to the given coods
+		moveToAndScale : function(coodsX, coodsY, scale){
+			if(coodsX == null || coodsY == null){
+				console.warn("[JQuery-Zoom] Coods are null");
+				return;
+			}
+			var duration = 700;
+			coodsX = coodsX *(-1);
+			coodsY = coodsY *(-1);
+			var targetRect = getTargetRect();
+			var validPosition = getValidTargetElementPosition(coodsX,coodsY, targetRect.width, targetRect.height);
+			var validScale = getValidScale(scale);
+			stopAnim(ESmartZoomEvent.PAN);
+			dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.START, false); 
+			animateTO(targetElement, validPosition.x, validPosition.y, validScale,targetRect.width, targetRect.height, duration, function(){ // set the new position and size via the animation function
+				dispatchSmartZoomEvent(ESmartZoomEvent.PAN, ESmartZoomEvent.END, false); 
+			});
+		},
+
+		reset : function(){
+			adjustToContainer();
+		},
+
 	     /**
 		  * destroy function accessible via direct call (ex : $('#zoomImage').smartZoom('destroy');)
 		  * use this function to clean and remove smartZoom plugin 
 		  */
-	    destroy : function() {
+		destroy: function () {
 	    	var smartData = targetElement.data('smartZoomData');
 	    	if(!smartData)
 	    		return;
 	    	stopAnim(); // stop current animation
 	    	var containerDiv = smartData.containerDiv;
 	    	// remove all listenerns 
-	        targetElement.unbind('mousedown.smartZoom');
-	        targetElement.unbind('touchstart.smartZoom');
-	    	containerDiv.unbind('mousewheel.smartZoom');
-	        containerDiv.unbind('dblclick.smartZoom');
-	    	containerDiv.unbind( 'mousewheel.smartZoom DOMMouseScroll.smartZoom');
-		    $(window).unbind('resize.smartZoom');
-			$(document).unbind('mousemove.smartZoom');
-			$(document).unbind('mouseup.smartZoom');
-			$(document).unbind('touchmove.smartZoom');
-	    	$(document).unbind('touchend.smartZoom');
+	        targetElement.off('mousedown.smartZoom');
+	        targetElement.off('touchstart.smartZoom');
+	    	containerDiv.off('mousewheel.smartZoom');
+	        containerDiv.off('dblclick.smartZoom');
+	    	containerDiv.off( 'mousewheel.smartZoom DOMMouseScroll.smartZoom');
+		    $(window).off('resize.smartZoom');
+			$(document).off('mousemove.smartZoom');
+			$(document).off('mouseup.smartZoom');
+			$(document).off('touchmove.smartZoom');
+	    	$(document).off('touchend.smartZoom');
 		
 			targetElement.css({"cursor":"default"}); // reset default cursor
 		    containerDiv.before(targetElement); // move target element to original container 
@@ -271,7 +315,7 @@
     	return publicMethods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
     } else if (typeof method === 'object' || ! method ) { // else if it's an object we initilize the plugin
     	if(targetElement[0].tagName.toLowerCase() == "img" && !targetElement[0].complete){ // if the target is an image when wait for image loading before initialization
-    		targetElement.bind('load.smartZoom',{arguments:arguments[0]},  imgLoadedHandler);
+    		targetElement.on('load.smartZoom',{arguments:arguments[0]},  imgLoadedHandler);
    	  	}else{
     		publicMethods.init.apply( targetElement, [arguments[0]]);
     	} 
@@ -309,7 +353,7 @@
     		return;
 		var targetRect = getTargetRect();
     	var currentScale = (targetRect.width / smartData.originalSize.width);
-    	if(parseInt(currentScale*100)>parseInt(smartData.adjustedPosInfos.scale*100)) // multiply by 100 to resolve precision problem
+    	if(parseInt(currentScale*100)>=parseInt(smartData.adjustedPosInfos.scale*100)) // multiply by 100 to resolve precision problem
     		targetElement.css({"cursor":"move"});     
     	else	
     		targetElement.css({"cursor":"default"});
@@ -327,10 +371,10 @@
      * save mouse position on mouse down (positions will be used in moveOnMotion function)
      * @param {Object} e : mouse event 
      */
-    function mouseDownHandler(e){
-    	e.preventDefault(); // prevent default browser drag
+    function mouseDownHandler(e) {
+        e.preventDefault(); // prevent default browser drag
 		$(document).on('mousemove.smartZoom', mouseMoveHandler); // add mouse move and mouseup listeners to enable drag
-		$(document).bind('mouseup.smartZoom', mouseUpHandler);
+		$(document).on('mouseup.smartZoom', mouseUpHandler);
 		var smartData = targetElement.data('smartZoomData'); // save mouse position on mouse down
 		smartData.moveCurrentPosition = new Point(e.pageX, e.pageY);
 		smartData.moveLastPosition =  new Point(e.pageX, e.pageY);
@@ -342,7 +386,7 @@
      */
     function mouseMoveHandler(e){
 
-    	var smartData = targetElement.data('smartZoomData');
+        var smartData = targetElement.data('smartZoomData');
     	if(smartData.mouseMoveForPan || (!smartData.mouseMoveForPan && smartData.moveCurrentPosition.x != e.pageX && smartData.moveCurrentPosition.y != e.pageY)){
     		smartData.mouseMoveForPan = true;
     		moveOnMotion(e.pageX, e.pageY, 0, false);
@@ -368,8 +412,8 @@
 			zoomOnDblClick(e.pageX, e.pageY);
 		}
 		
-		$(document).unbind('mousemove.smartZoom'); // remove listeners when drag is done
-		$(document).unbind('mouseup.smartZoom');    	
+		$(document).off('mousemove.smartZoom'); // remove listeners when drag is done
+		$(document).off('mouseup.smartZoom');    	
     }
     
     /**
@@ -378,16 +422,15 @@
      */
     function touchStartHandler(e){
     	e.preventDefault(); // prevent default browser drag
-    	
-    	$(document).unbind('touchmove.smartZoom'); // unbind if we already listen touch events
-	    $(document).unbind('touchend.smartZoom');
-    	
-	    $(document).bind('touchmove.smartZoom', touchMoveHandler); // listen move and touch end events to manage drag on touch
-    	$(document).bind('touchend.smartZoom', touchEndHandler);
-    	
+    	$(document).off('touchmove.smartZoom'); // off if we already listen touch events
+	    $(document).off('touchend.smartZoom');
+	    $(document).off('gesturestart.smartZoom');
+
+		$(document).on('touchmove.smartZoom', touchMoveHandler); // listen move and touch end events to manage drag on touch
+		$(document).on('touchend.smartZoom', touchEndHandler);
+
 		var touchList = e.originalEvent.touches; // get touch infos from event 
 		var firstTouch = touchList[0];
-		     
 		var smartData = targetElement.data('smartZoomData'); 
 		smartData.touch.touchMove = false; // will be set to true if the user start drag
 		smartData.touch.touchPinch = false; // will be set to true if the user whant to pinch (zoom)
@@ -401,15 +444,14 @@
     		smartData.touch.lastTouchPositionArr.push(new Point(currentTouch.pageX, currentTouch.pageY));
     	}
     }
-    
+
     /**
      *  manage pinch or drag when touch move
      * @param {Object} e : touch event
      */
+
     function touchMoveHandler(e){ 
-
  		e.preventDefault(); // prevent default browser behaviour
-
     	var smartData = targetElement.data('smartZoomData');
     	
 		var touchListEv = e.originalEvent.touches; // get touch information on event
@@ -464,9 +506,9 @@
  		e.preventDefault(); // prevent default browser behaviour
  		
  		var nbTouchAtEnd = e.originalEvent.touches.length;
-    	if(nbTouchAtEnd == 0){ // unbind listeners if the user take off all his fingers
-	    	$(document).unbind('touchmove.smartZoom');
-		    $(document).unbind('touchend.smartZoom');
+    	if(nbTouchAtEnd == 0){ // off listeners if the user take off all his fingers
+	    	$(document).off('touchmove.smartZoom');
+		    $(document).off('touchend.smartZoom');
     	}
     	var smartData = targetElement.data('smartZoomData');
     	
@@ -554,7 +596,8 @@
 	   		var targetRect = getTargetRect(); // the target current size
 	   	
 		   	var cssObject = new Object(); // set the current current target size and the target scale to css transformation so it stop previous transformation
-		  	cssObject[smartData.transitionObject.transition] = 'all 0s'; // apply transformation now
+		  	//cssObject[smartData.transitionObject.transition] = 'all 0s'; // apply transformation now
+			//cssObject[smartData.transitionObject.touch]='none';
 		  	if(smartData.transitionObject.css3dSupported){
 			  	cssObject[smartData.transitionObject.transform] = 'translate3d('+targetRect.x+'px, '+targetRect.y+'px, 0) scale3d('+targetRect.width/originalSize.width+','+targetRect.height/originalSize.height+', 1)';
 			}else{
@@ -570,7 +613,19 @@
     	if(userActionType != null)
     		dispatchSmartZoomEvent(userActionType, '', true); 
     }
-    
+	function getValidScale(scale){
+		var smartData = targetElement.data('smartZoomData');
+		if(scale > smartData.settings.maxScale){
+			console.warn("[jquery-zoom] Scale is to height");
+			return;
+		}
+		if(scale < 0){
+			console.warn("[jquery-zoom] Scale is lower than 0");
+			return;
+		}
+		return scale;
+
+	}
     /**
      * manage position validation
      * @param {Number} marginLeft : global x position
@@ -581,10 +636,18 @@
     function getValidTargetElementPosition(xPosition, yPosition, width, height){
     	var smartData = targetElement.data('smartZoomData');
     	 // adjusting if the content is out of the initial content box from "adjustedPosInfos"
-	    var newMarginTop = Math.min(smartData.adjustedPosInfos.top, yPosition); // adjust in top 
-	    newMarginTop += Math.max(0, (smartData.adjustedPosInfos.top + smartData.adjustedPosInfos.height) - (newMarginTop + height)) // adjust in bottom
-	    var newMarginLeft = Math.min(smartData.adjustedPosInfos.left, xPosition); // adjust in left
-	    newMarginLeft += Math.max(0, (smartData.adjustedPosInfos.left + smartData.adjustedPosInfos.width) - (newMarginLeft + width)); // adjust in right
+        // edit 
+    	if (smartData.settings.Border) {
+    	    var newMarginTop = Math.min(smartData.adjustedPosInfos.top, yPosition); // adjust in top 
+    	    newMarginTop += Math.max(0, (smartData.adjustedPosInfos.top + smartData.adjustedPosInfos.height) - (newMarginTop + height)) // adjust in bottom
+    	    var newMarginLeft = Math.min(smartData.adjustedPosInfos.left, xPosition); // adjust in left
+    	    newMarginLeft += Math.max(0, (smartData.adjustedPosInfos.left + smartData.adjustedPosInfos.width) - (newMarginLeft + width)); // adjust in right
+    	}else{
+		    var newMarginTop = yPosition;
+	        newMarginTop += Math.max(0, 0 - (newMarginTop + height)); // adjust in bottom
+	        var newMarginLeft = xPosition; // adjust in left
+	        newMarginLeft += Math.max(0, 0 - (newMarginLeft + width)); // adjust in right
+    	}
 	    return new Point(newMarginLeft.toFixed(2), newMarginTop.toFixed(2));
     }
     
@@ -593,7 +656,7 @@
      * @param {Object} e : load event
      */
     function imgLoadedHandler(e){
-    	targetElement.unbind('load.smartZoom');
+    	targetElement.off('load.smartZoom');
     	publicMethods.init.apply( targetElement, [e.data.arguments]); 
     }
     
@@ -617,9 +680,12 @@
 		
 	  	var containerRect = getRect(containerDiv); // get the rectangle from the new containerDiv position and size
 	  	var scaleToFit = Math.min(Math.min(containerRect.width/originalSize.width, containerRect.height/originalSize.height), 1).toFixed(2); // scale to use to include the target into containerRect
-	  	var newWidth = originalSize.width * scaleToFit; // we could now find the new size
+		
+		
+		
+		var newWidth = originalSize.width * scaleToFit; // we could now find the new size
 	  	var newHeight = originalSize.height * scaleToFit;
-	  
+
 	    // store the position and size information in adjustedPosInfos object
 	  	smartData.adjustedPosInfos = {"left":(containerRect.width - newWidth)/2 + parentOffset.left, "top": (containerRect.height - newHeight)/2 + parentOffset.top, "width": newWidth, "height" : newHeight, "scale":scaleToFit};
 	  	stopAnim();
@@ -652,12 +718,45 @@
     		var originalSize = smartData.originalSize;
 		  	var cssObject = new Object();
 		  	cssObject[smartData.transitionObject.transform+'-origin'] = '0 0';
+			cssObject[smartData.transitionObject.touch]='none';
 		  	cssObject[smartData.transitionObject.transition] = 'all '+duration / 1000+'s ease-out'; // set effect duration
 		  	
-		  	if(smartData.transitionObject.css3dSupported) // use css 3d translate if supported
+		  	if(smartData.transitionObject.css3dSupported){ // use css 3d translate if supported
 		  		cssObject[smartData.transitionObject.transform] = 'translate3d('+left+'px, '+top+'px, 0) scale3d('+width/originalSize.width+','+height/originalSize.height+', 1)';
-		  	else
+		  	}else{
 		  		cssObject[smartData.transitionObject.transform] = 'translateX('+left+'px) translateY('+top+'px) scale('+width/originalSize.width+','+height/originalSize.height+')';
+		  	}
+		  
+		  	if (callback != null) {
+		  		smartData.transitionObject.cssAnimHandler = callback;
+                target.one($.support.transition.end, smartData.transitionObject.cssAnimHandler);
+		  	}
+		  	target.css(cssObject); // apply css transformation
+		}else{ // use JQuery animate if css transition is not supported
+	    	
+	    	target.animate({"margin-left": left, "margin-top": top, "width": width, "height" : height}, {duration:duration, easing:smartData.settings.easing, complete:function() {
+			 	if(callback != null)
+			 		callback();
+			}});
+		}
+    }
+	function animateTO(target, coodsX, coodsY, scale, width, height, duration, callback){
+    	
+    	var smartData = targetElement.data('smartZoomData');
+ 		var parentOffset = smartData.containerDiv.offset();
+   		
+    	if (smartData.transitionObject != null) { // use css transition if supported
+    		var originalSize = smartData.originalSize;
+		  	var cssObject = new Object();
+		  	cssObject[smartData.transitionObject.transform+'-origin'] = '0 0';
+			cssObject[smartData.transitionObject.touch]='none';
+		  	cssObject[smartData.transitionObject.transition] = 'all '+duration / 1000+'s ease-out'; // set effect duration
+		  	
+		  	if(smartData.transitionObject.css3dSupported){ // use css 3d translate if supported
+		  		cssObject[smartData.transitionObject.transform] = 'translate3d('+coodsX+'px, '+coodsY+'px, 0) scale3d('+scale+','+scale+', 1)';
+		  	}else{
+		  		cssObject[smartData.transitionObject.transform] = 'translateX('+coodsX+'px) translateY('+coodsY+'px) scale('+scale+','+scale+')';
+			}
 		  	if(callback != null){
 		  		smartData.transitionObject.cssAnimHandler = callback;
           target.one($.support.transition.end, smartData.transitionObject.cssAnimHandler);
@@ -665,7 +764,7 @@
 		  	target.css(cssObject); // apply css transformation
 		}else{ // use JQuery animate if css transition is not supported
 	    	
-	    	target.animate({"margin-left": left, "margin-top": top, "width": width, "height" : height}, {duration:duration, easing:smartData.settings.easing, complete:function() {
+	    	target.animate({"margin-left": coodsX, "margin-top": coodsY, "width": width, "height" : height}, {duration:duration, easing:smartData.settings.easing, complete:function() {
 			 	if(callback != null)
 			 		callback();
 			}});
@@ -747,7 +846,6 @@
 			var ev = jQuery.Event(eventTypeToDispatch);
 			ev.targetRect = getTargetRect(true);
 			ev.scale = ev.targetRect.width / smartData.originalSize.width;
-      //console.log(targetElement, eventTypeToDispatch);
 			targetElement.trigger(ev);
 		}
     }
@@ -764,6 +862,7 @@
 	   var transitionTestArr = ['transition', 'WebkitTransition', 'MozTransition', 'MsTransition', 'OTransition']; // all type all transitions to test
 	   var transitionArr = ['transition', '-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition'];
 	   var transformArr = ['transform', '-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform'];
+	   var touchArr = ['touch-action'];
 		
 	   var length = transitionTestArr.length;
 	   var transformObject;
@@ -777,8 +876,8 @@
 			    div.css(transformObject);
 			    css3dSupported = ((div.offset().left - $('body').offset().left) == 20); // if translate3d(20px,0,0) via transformArr[i] == 20px the transformation is valid for this browser
 			    div.empty().remove();
-	   			if(css3dSupported){ // return the kind of transformation supported
-					return {transition:transitionArr[i], transform:transformArr[i], css3dSupported:css3dSupported};
+			    if (css3dSupported) { // return the kind of transformation supported
+					return {transition:transitionArr[i], transform:transformArr[i], css3dSupported:css3dSupported, touch:touchArr};
 				}	   			
 	   		}
 	   }
@@ -816,8 +915,33 @@
     /**
      * reinit the component when the user resize the window 
      */
-   	function windowResizeEventHandler(){
-   		adjustToContainer();
+    function windowResizeEventHandler(e) {
+        //TODO fix scroll bug .resize() | jQuery API Documentation
+        var smartData = targetElement.data('smartZoomData');
+
+
+        var rtime;
+        var timeout = false;
+        var delta = 200;
+
+            rtime = new Date();
+            if (timeout === false) {
+                timeout = true;
+                setTimeout(resizeend, delta);
+            }
+
+
+        function resizeend() {
+            if (new Date() - rtime < delta) {
+                setTimeout(resizeend, delta);
+            } else {
+                timeout = false;
+                //alert('Done resizing');
+                adjustToContainer();
+                smartData.originalSize = { width: targetElement.width(), height: targetElement.height() };
+                smartData.originalPosition = targetElement.offset();
+            }
+        }
    	}
 
  	/**
@@ -867,6 +991,15 @@
 		    return Math.sqrt(Math.pow((point.y - this.y) ,2) + Math.pow((point.x - this.x),2));
 		} 
 	}
+	function customzoom(direction) {
+	    if (direction ==="+") {
+	        publicMethods.zoom(0.5, false, null);
+	    }
+	    if (direction === "-") {
+	        publicMethods.zoom(-0.5, false, null);
+	    }
+	    
+	}
 
 
   };
@@ -898,7 +1031,7 @@
  * 
  * Requires: 1.2.2+
  */
-(function(e){function r(t){var n=t||window.event,r=[].slice.call(arguments,1),i=0,s=true,o=0,u=0;t=e.event.fix(n);t.type="mousewheel";if(n.wheelDelta){i=n.wheelDelta/120}if(n.detail){i=-n.detail/3}u=i;if(n.axis!==undefined&&n.axis===n.HORIZONTAL_AXIS){u=0;o=-1*i}if(n.wheelDeltaY!==undefined){u=n.wheelDeltaY/120}if(n.wheelDeltaX!==undefined){o=-1*n.wheelDeltaX/120}r.unshift(t,i,o,u);return(e.event.dispatch||e.event.handle).apply(this,r)}var t=["DOMMouseScroll","mousewheel"];if(e.event.fixHooks){for(var n=t.length;n;){e.event.fixHooks[t[--n]]=e.event.mouseHooks}}e.event.special.mousewheel={setup:function(){if(this.addEventListener){for(var e=t.length;e;){this.addEventListener(t[--e],r,false)}}else{this.onmousewheel=r}},teardown:function(){if(this.removeEventListener){for(var e=t.length;e;){this.removeEventListener(t[--e],r,false)}}else{this.onmousewheel=null}}};e.fn.extend({mousewheel:function(e){return e?this.bind("mousewheel",e):this.trigger("mousewheel")},unmousewheel:function(e){return this.unbind("mousewheel",e)}})})(jQuery)
+(function(e){function r(t){var n=t||window.event,r=[].slice.call(arguments,1),i=0,s=true,o=0,u=0;t=e.event.fix(n);t.type="mousewheel";if(n.wheelDelta){i=n.wheelDelta/120}if(n.detail){i=-n.detail/3}u=i;if(n.axis!==undefined&&n.axis===n.HORIZONTAL_AXIS){u=0;o=-1*i}if(n.wheelDeltaY!==undefined){u=n.wheelDeltaY/120}if(n.wheelDeltaX!==undefined){o=-1*n.wheelDeltaX/120}r.unshift(t,i,o,u);return(e.event.dispatch||e.event.handle).apply(this,r)}var t=["DOMMouseScroll","mousewheel"];if(e.event.fixHooks){for(var n=t.length;n;){e.event.fixHooks[t[--n]]=e.event.mouseHooks}}e.event.special.mousewheel={setup:function(){if(this.addEventListener){for(var e=t.length;e;){this.addEventListener(t[--e],r,false)}}else{this.onmousewheel=r}},teardown:function(){if(this.removeEventListener){for(var e=t.length;e;){this.removeEventListener(t[--e],r,false)}}else{this.onmousewheel=null}}};e.fn.extend({mousewheel:function(e){return e?this.on("mousewheel",e):this.trigger("mousewheel")},unmousewheel:function(e){return this.off("mousewheel",e)}})})(jQuery)
 
 // CSS TRANSITION SUPPORT (Shoutout: http://www.modernizr.com/)
 // ============================================================
