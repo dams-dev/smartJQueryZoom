@@ -47,7 +47,7 @@
 		  *					           'mouseMoveEnabled' : true enable plugin target drag behviour
 		  * 					       'moveCursorEnabled' : true show moveCursor for drag
 		  * 					       'touchEnabled' : true enable plugin touch interaction 
-		  * 					       'Border' : true enable border by the container inside 
+		  * 					       'border' : true enable border by the container inside 
 		  *						       'dblTapEnabled' : true enable plugin double tap behaviour
 		  *							   'zoomOnSimpleClick': false enable zoom on simple click (if set to true dbl lick is disabled)
 		  *						       'pinchEnabled' : true enable zoom when user pinch on target
@@ -82,7 +82,7 @@
 		      'zoomOnSimpleClick': false,
 		      'pinchEnabled' : true,
 		      'touchMoveEnabled' : true,
-		      'Border': true,
+		      'border': true,
 		      'containerBackground' : "#FFFFFF",
 		      'containerClass': "",
 		      'zoomInElement': null,
@@ -637,7 +637,7 @@
     	var smartData = targetElement.data('smartZoomData');
     	 // adjusting if the content is out of the initial content box from "adjustedPosInfos"
         // edit 
-    	if (smartData.settings.Border) {
+    	if (smartData.settings.border) {
     	    var newMarginTop = Math.min(smartData.adjustedPosInfos.top, yPosition); // adjust in top 
     	    newMarginTop += Math.max(0, (smartData.adjustedPosInfos.top + smartData.adjustedPosInfos.height) - (newMarginTop + height)) // adjust in bottom
     	    var newMarginLeft = Math.min(smartData.adjustedPosInfos.left, xPosition); // adjust in left
