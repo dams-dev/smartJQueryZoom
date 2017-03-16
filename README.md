@@ -37,7 +37,7 @@ options = {'top' : '0', // zoom target container top position in pixel
            'mouseMoveEnabled' : true, // enable plugin target drag behviour
            'moveCursorEnabled' : true, // show moveCursor for drag
            'touchEnabled' : true, // enable plugin touch interaction 
-           'Border' : true enable border by the container inside 
+           'Border' : true //enable border by the container inside 
            'dblTapEnabled' : true, // enable plugin double tap behaviour 
            'pinchEnabled' : true, // enable zoom when user pinch on target
            'touchMoveEnabled' : true, // enable target move via touch
