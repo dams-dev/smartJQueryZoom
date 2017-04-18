@@ -1,4 +1,4 @@
-#Zoom and pan jQuery plugin
+# Zoom and pan jQuery plugin
 
 This plugin manage smooth zoom and pan on a given dom element. The plugin works on mobile and pc and use CSS3 transitions on compatible web browsers. (javascript is used for old web browsers)
 
@@ -6,7 +6,7 @@ Zoom is enabled via mouse events (scroll and click) on pc and with touch events 
 
 For live examples and more explanations visit : [http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery](http://e-smartdev.com/#!jsPluginList/panAndZoomJQuery)
 
-##Initialization
+## Initialization
 
 ```js
   $(document).ready(function() {
@@ -14,7 +14,7 @@ For live examples and more explanations visit : [http://e-smartdev.com/#!jsPlugi
   });
 ```
 
-##Options
+## Options
 You can customize smartZoom plugin behaviour with an option object.
 ```js
 options = {'top' : '0', // zoom target container top position in pixel
@@ -43,9 +43,9 @@ This sample code set the maximum scale to 4 and apply a red background to the zo
     $("#elementToZoomOn").smartZoom({'maxScale':4, 'containerBackground':'#FF0000'}); // start plugin behaviour
   });
 ```
-##Methods
+## Methods
 
-###`smartZoom("zoom", scaleToAdd, globalRequestedPosition, duration)`
+### `smartZoom("zoom", scaleToAdd, globalRequestedPosition, duration)`
 Zoom on a given position.
 ```js
 	jQuery(document).ready(function(){
@@ -60,7 +60,7 @@ __Arguments__
   2. `globalRequestedPosition` _{Object}_: Position to zoom on. (Default target center)
   3. `duration` _{Number}_: Effect duration in millisecondes. (Default 700)
 
-###`smartZoom("pan", pixelsToMoveOnX, pixelsToMoveOnY, duration)`
+### `smartZoom("pan", pixelsToMoveOnX, pixelsToMoveOnY, duration)`
 Move the target on the given position.
 ```js
 	jQuery(document).ready(function(){
@@ -75,7 +75,7 @@ __Arguments__
   2. `pixelsToMoveOnY` _{Object}_: Pixels to add on vertical axis.
   3. `duration` _{Number}_: Effect duration in millisecondes. (Default 700)
 
-###`smartZoom("destroy")`
+### `smartZoom("destroy")`
 Remove and clean the plugin.
 ```js
 	jQuery(document).ready(function(){
@@ -84,7 +84,7 @@ Remove and clean the plugin.
 ```
 Remove the plugin behaviour.
 
-###`smartZoom("isPluginActive"):Boolean`
+### `smartZoom("isPluginActive"):Boolean`
 Check if the plugin is active or not.
 ```js
 	jQuery(document).ready(function(){
